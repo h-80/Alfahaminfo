@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>عرض المشاركة - الفحام للمعلوميات</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      font-family: 'Cairo', sans-serif;
+      background-color: #f9f9f9;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background-color: #0b2545;
+      padding: 15px;
+      text-align: center;
+      cursor: pointer;
+    }
+    header img {
+      height: 70px;
+    }
+    main {
+      max-width: 800px;
+      margin: auto;
+      background: #fff;
+      padding: 20px;
+      margin-top: 20px;
+      border-radius: 8px;
+    }
+    h1.title {
+      font-size: 1.8rem;
+      color: #0b2545;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .content {
+      font-size: 1.1rem;
+      line-height: 1.8;
+      color: #333;
+    }
+    iframe {
+      max-width: 100%;
+      border: none;
+    }
+    .share-buttons {
+      margin-top: 30px;
+      text-align: center;
+    }
+    .share-buttons a {
+      display: inline-block;
+      margin: 0 10px;
+      font-size: 18px;
+      background-color: #0b2545;
+      color: white;
+      padding: 10px 15px;
+      border-radius: 6px;
+      text-decoration: none;
+    }
+    .share-buttons a:hover {
+      background-color: #1c3a5d;
+    }
+  </style>
+</head>
+<body>
+
+  <header onclick="window.location.href='index.html'">
+    <img src="https://k.top4top.io/p_3469du6n40.png" alt="الفحام للمعلوميات" />
+  </header>
+
+  <main>
+    <h1 class="title" id="post-title">تحميل...</h1>
+    <div id="post-content" class="content">جاري تحميل المحتوى...</div>
+
+    <div class="share-buttons" id="share">
+      <a id="share-whatsapp" target="_blank">مشاركة واتساب</a>
+      <a id="share-facebook" target="_blank">مشاركة فيسبوك</a>
+      <a id="share-twitter" target="_blank">مشاركة تويتر</a>
+    </div>
+  </main>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyCcXWs8SCvzUmLaqdxBe6rTGaRPqvz7BBc",
+      authDomain: "alfaham-info.firebaseapp.com",
+      databaseURL: "https://alfaham-info-default-rtdb.firebaseio.com/",
+      projectId: "alfaham-info",
+      storageBucket: "alfaham-info.appspot.com",
+      messagingSenderId: "383796585349",
+      appId: "1:383796585349:web:c3346dcd6fcfecf733daec"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('id');
+
+    function convertYouTubeLinks(html) {
+      return html.replace(
+        /https:\/\/www\.youtube\.com\/watch\?v=([\w\-]+)/g,
+        '<iframe width="100%" height="315" src="https://www.youtube.com/embed/$1" allowfullscreen></iframe>'
+      );
+    }
+
+    if (id) {
+      db.ref('articles/' + id).once('value').then(snapshot => {
+        const data = snapshot.val();
+        if (data) {
+          document.getElementById('post-title').textContent = data.title;
+          const contentWithEmbed = convertYouTubeLinks(data.content);
+          document.getElementById('post-content').innerHTML = contentWithEmbed;
+
+          const pageUrl = window.location.href;
+          document.getElementById('share-whatsapp').href = `https://wa.me/?text=${encodeURIComponent(data.title + " " + pageUrl)}`;
+          document.getElementById('share-facebook').href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(pageUrl)}`;
+          document.getElementById('share-twitter').href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(data.title)}&url=${encodeURIComponent(pageUrl)}`;
+        } else {
+          document.getElementById('post-title').textContent = 'المشاركة غير موجودة';
+          document.getElementById('post-content').textContent = '';
+          document.getElementById('share').style.display = 'none';
+        }
+      });
+    } else {
+      document.getElementById('post-title').textContent = 'لم يتم تحديد معرف المشاركة';
+      document.getElementById('post-content').textContent = '';
+      document.getElementById('share').style.display = 'none';
+    }
+  </script>
+
+</body>
+</html>
