@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>الفحام للمعلوميات</title>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700&display=swap" rel="stylesheet" />
   <style>
@@ -20,6 +20,8 @@
     header img {
       height: 70px;
       margin-bottom: 5px;
+      user-select: none;
+      cursor: pointer;
     }
     header p {
       color: #ffffffcc;
@@ -58,17 +60,18 @@
       padding: 10px 15px;
       margin: 0;
       text-align: right;
+      user-select: text;
     }
   </style>
 </head>
 <body>
   <header>
-    <img src="https://k.top4top.io/p_3469du6n40.png" alt="الفحام للمعلوميات" />
+    <img src="https://k.top4top.io/p_3469du6n40.png" alt="الفحام للمعلوميات" id="logo" title="الصفحة الرئيسية" />
     <p>مختصون في التقنيات والبرمجيات والتصاميم والشروحات</p>
   </header>
 
   <main id="articles-container">
-    <p>جاري تحميل المشاركات...</p>
+    <p style="text-align:center;">جاري تحميل المشاركات...</p>
   </main>
 
   <!-- Firebase -->
@@ -81,7 +84,7 @@
       authDomain: "alfaham-info.firebaseapp.com",
       databaseURL: "https://alfaham-info-default-rtdb.firebaseio.com/",
       projectId: "alfaham-info",
-      storageBucket: "alfaham-info.firebasestorage.app",
+      storageBucket: "alfaham-info.appspot.com",
       messagingSenderId: "383796585349",
       appId: "1:383796585349:web:c3346dcd6fcfecf733daec"
     };
@@ -89,6 +92,10 @@
     const db = firebase.database();
 
     const container = document.getElementById("articles-container");
+
+    document.getElementById("logo").addEventListener("click", () => {
+      window.location.href = "index.html";
+    });
 
     db.ref("articles").on("value", snapshot => {
       const data = snapshot.val();
@@ -102,7 +109,7 @@
         card.className = "card";
         card.href = `article.html?id=${id}`;
         card.innerHTML = `
-          <img class="thumbnail" src="${article.imageUrl || 'https://via.placeholder.com/320x180?text=No+Image'}" alt="صورة المشاركة" />
+          <img class="thumbnail" src="${article.imageUrl || 'https://via.placeholder.com/320x180?text=لا+صورة'}" alt="صورة المشاركة">
           <h3 class="title">${article.title}</h3>
         `;
         container.appendChild(card);
