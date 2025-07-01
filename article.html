@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>عرض المشاركة - الفحام للمعلوميات</title>
+  <style>
+    body {
+      font-family: 'Cairo', sans-serif;
+      background-color: #f9f9f9;
+      margin: 0;
+      padding: 20px;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .title {
+      font-size: 1.8rem;
+      color: #0b2545;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+    .content {
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+    .thumbnail {
+      width: 100%;
+      max-height: 400px;
+      object-fit: cover;
+      margin-bottom: 20px;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="content">
+    <h1 class="title" id="post-title">تحميل...</h1>
+    <img id="post-image" class="thumbnail" style="display: none;" />
+    <div id="post-content">جاري تحميل المحتوى...</div>
+  </div>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyCcXWs8SCvzUmLaqdxBe6rTGaRPqvz7BBc",
+      authDomain: "alfaham-info.firebaseapp.com",
+      databaseURL: "https://alfaham-info-default-rtdb.firebaseio.com/",
+      projectId: "alfaham-info",
+      storageBucket: "alfaham-info.firebasestorage.app",
+      messagingSenderId: "383796585349",
+      appId: "1:383796585349:web:c3346dcd6fcfecf733daec"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('id');
+
+    if (id) {
+      db.ref('articles/' + id).once('value').then(snapshot => {
+        const data = snapshot.val();
+        if (data) {
+          document.getElementById('post-title').textContent = data.title;
+          if (data.imageUrl) {
+            const img = document.getElementById('post-image');
+            img.src = data.imageUrl;
+            img.style.display = 'block';
+          }
+          document.getElementById('post-content').innerHTML = data.content;
+        } else {
+          document.getElementById('post-title').textContent = 'المشاركة غير موجودة';
+          document.getElementById('post-content').textContent = '';
+        }
+      }).catch(() => {
+        document.getElementById('post-title').textContent = 'حدث خطأ أثناء تحميل المشاركة';
+        document.getElementById('post-content').textContent = '';
+      });
+    } else {
+      document.getElementById('post-title').textContent = 'لم يتم تحديد معرف المشاركة';
+      document.getElementById('post-content').textContent = '';
+    }
+  </script>
+</body>
+</html>
