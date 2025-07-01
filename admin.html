@@ -28,11 +28,12 @@
     label {
       font-weight: bold;
     }
-    input[type="text"], textarea {
+    input[type="text"] {
       width: 100%;
       padding: 10px;
       border-radius: 5px;
       border: 1px solid #ccc;
+      font-size: 16px;
     }
     button {
       padding: 10px 20px;
@@ -42,6 +43,7 @@
       border-radius: 5px;
       cursor: pointer;
       font-size: 16px;
+      margin-top: 10px;
     }
     .post {
       background: #fff;
@@ -53,6 +55,13 @@
     .post button {
       margin-left: 5px;
     }
+
+    /* تحسين للموبايل */
+    @media (max-width: 768px) {
+      input[type="text"], textarea {
+        font-size: 16px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -60,12 +69,12 @@
 
   <div class="form-group">
     <label for="title">عنوان المشاركة:</label>
-    <input type="text" id="title" />
+    <input type="text" id="title">
   </div>
 
   <div class="form-group">
     <label for="imageUrl">رابط الصورة المصغرة:</label>
-    <input type="text" id="imageUrl" />
+    <input type="text" id="imageUrl">
   </div>
 
   <div class="form-group">
@@ -79,27 +88,32 @@
   <div id="posts"></div>
 
   <script>
+    // Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyCcXWs8SCvzUmLaqdxBe6rTGaRPqvz7BBc",
       authDomain: "alfaham-info.firebaseapp.com",
       databaseURL: "https://alfaham-info-default-rtdb.firebaseio.com/",
       projectId: "alfaham-info",
-      storageBucket: "alfaham-info.firebasestorage.app",
+      storageBucket: "alfaham-info.appspot.com",
       messagingSenderId: "383796585349",
       appId: "1:383796585349:web:c3346dcd6fcfecf733daec"
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
+    // TinyMCE init
     tinymce.init({
       selector: '#editor',
       language: 'ar',
-      height: 300,
+      height: window.innerHeight * 0.6,
+      width: '100%',
+      menubar: false,
       plugins: 'link image code',
-      toolbar: 'undo redo | bold italic underline | alignleft aligncenter alignright | link image code'
+      toolbar: 'undo redo | bold italic underline | alignleft aligncenter alignright | link image code',
+      content_style: "body { font-family: 'Cairo', sans-serif; font-size: 16px; padding: 10px; }"
     });
 
-    // النشر
+    // زر النشر
     document.getElementById("publishBtn").addEventListener("click", () => {
       const title = document.getElementById("title").value.trim();
       const imageUrl = document.getElementById("imageUrl").value.trim();
@@ -159,7 +173,7 @@
         document.getElementById("imageUrl").value = data.imageUrl;
         tinymce.get("editor").setContent(data.content);
 
-        // تعديل الزر ليعمل كزر حفظ التعديل
+        // تحديث الزر بعد التعديل
         document.getElementById("publishBtn").onclick = function () {
           const title = document.getElementById("title").value.trim();
           const imageUrl = document.getElementById("imageUrl").value.trim();
