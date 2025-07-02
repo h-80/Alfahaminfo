@@ -45,8 +45,8 @@
     }
     #editor {
       width: 100%;
-      min-height: 400px;
-      padding: 10px;
+      min-height: 500px;
+      padding: 15px;
       background: white;
       border-radius: 6px;
       border: 1px solid #ccc;
@@ -119,6 +119,7 @@
     <button onclick="execCmd('justifyLeft')">يسار</button>
     <button onclick="insertImageFromLink()">🖼 رابط صورة</button>
     <button onclick="insertImageFromDevice()">📁 من الجهاز</button>
+    <button onclick="insertImageWithLink()">🔗 صورة برابط</button>
     <button onclick="insertYoutube()">📺 يوتيوب</button>
     <button onclick="insertHtml()">🔤 HTML</button>
     <select onchange="changeFontSize(this.value)">
@@ -185,6 +186,15 @@
       input.click();
     }
 
+    function insertImageWithLink() {
+      const imgUrl = prompt("رابط الصورة:");
+      const linkUrl = prompt("الرابط الذي تريد فتحه عند الضغط:");
+      if (imgUrl && linkUrl) {
+        const html = `<a href="${linkUrl}" target="_blank"><img src="${imgUrl}" style="max-width:100%; border-radius:8px;" /></a>`;
+        document.execCommand('insertHTML', false, html);
+      }
+    }
+
     function insertYoutube() {
       const url = prompt("أدخل رابط فيديو يوتيوب:");
       if (url) {
@@ -197,13 +207,8 @@
           return;
         }
         const embedUrl = `https://www.youtube.com/embed/${videoId}`;
-        const iframe = document.createElement('iframe');
-        iframe.width = "100%";
-        iframe.height = "315";
-        iframe.src = embedUrl;
-        iframe.frameBorder = "0";
-        iframe.allowFullscreen = true;
-        document.getElementById('editor').appendChild(iframe);
+        const iframe = `<iframe width="100%" height="315" src="${embedUrl}" frameborder="0" allowfullscreen></iframe>`;
+        document.execCommand('insertHTML', false, iframe);
       }
     }
 
@@ -238,14 +243,12 @@
       }
 
       if(editPostId) {
-        // تحديث المشاركة
         db.ref("articles/" + editPostId).set({ title, imageUrl, content }).then(() => {
           alert("✅ تم تحديث المشاركة");
           resetForm();
           loadPosts();
         });
       } else {
-        // إضافة مشاركة جديدة
         const newKey = db.ref("articles").push().key;
         db.ref("articles/" + newKey).set({ title, imageUrl, content }).then(() => {
           alert("✅ تم نشر المشاركة");
@@ -314,7 +317,6 @@
       });
     }
 
-    // تحميل المشاركات عند فتح الصفحة
     loadPosts();
   </script>
 </body>
