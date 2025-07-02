@@ -32,19 +32,22 @@
       flex-wrap: wrap;
       gap: 20px;
       justify-content: center;
+      max-width: 1100px;
+      margin: auto;
     }
     .card {
       width: 320px;
-      background: #fff;
+      background: #b1001d; /* الأحمر الغامق */
       border-radius: 8px;
       overflow: hidden;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
       text-decoration: none;
-      color: inherit;
-      transition: transform 0.2s ease;
+      color: white;
+      transition: transform 0.3s ease, background 0.3s ease;
     }
     .card:hover {
-      transform: scale(1.02);
+      transform: scale(1.03);
+      background: #cc0022;
     }
     .thumbnail {
       width: 100%;
@@ -54,22 +57,46 @@
     .title {
       font-weight: 700;
       font-size: 1.1rem;
-      color: #0b2545;
+      color: white;
       padding: 10px 15px;
       margin: 0;
       text-align: right;
+    }
+    #loadMoreBtn {
+      display: block;
+      margin: 20px auto;
+      padding: 12px 30px;
+      background-color: #0b2545;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    #loadMoreBtn:hover {
+      background-color: #071a33;
+    }
+    #noMoreMsg {
+      text-align: center;
+      margin: 20px;
+      font-size: 16px;
+      color: #555;
     }
   </style>
 </head>
 <body>
   <header onclick="window.location.href='index.html'" style="cursor: pointer;">
-    <img src="https://k.top4top.io/p_3469du6n40.png" alt="الفحام للمعلوميات">
+    <img src="https://k.top4top.io/p_3469du6n40.png" alt="الفحام للمعلوميات" />
     <p>مختصون في التقنيات والبرمجيات والتصاميم والشروحات</p>
   </header>
 
   <main id="articles-container">
     <p>جاري تحميل المشاركات...</p>
   </main>
+
+  <button id="loadMoreBtn" style="display:none;">عرض المزيد</button>
+  <p id="noMoreMsg" style="display:none;">لا توجد مشاركات إضافية.</p>
 
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -88,24 +115,64 @@
     const db = firebase.database();
 
     const container = document.getElementById("articles-container");
+    const loadMoreBtn = document.getElementById("loadMoreBtn");
+    const noMoreMsg = document.getElementById("noMoreMsg");
 
-    db.ref("articles").on("value", snapshot => {
-      const data = snapshot.val();
-      container.innerHTML = "";
-      if (!data) {
-        container.innerHTML = "<p style='text-align:center;'>لا توجد مشاركات حالياً.</p>";
-        return;
-      }
-      Object.entries(data).reverse().forEach(([id, article]) => {
+    let allArticles = [];
+    let currentIndex = 0;
+    const batchSize = 6; // عدد المشاركات في كل مرة تُعرض
+
+    function renderArticles(start, end) {
+      for(let i = start; i < end && i < allArticles.length; i++) {
+        const [id, article] = allArticles[i];
         const card = document.createElement("a");
         card.className = "card";
         card.href = `article.html?id=${id}`;
         card.innerHTML = `
-          <img class="thumbnail" src="${article.imageUrl}" alt="صورة المشاركة">
+          <img class="thumbnail" src="${article.imageUrl}" alt="صورة المشاركة" />
           <h3 class="title">${article.title}</h3>
         `;
         container.appendChild(card);
-      });
+      }
+    }
+
+    function loadMore() {
+      const nextIndex = currentIndex + batchSize;
+      renderArticles(currentIndex, nextIndex);
+      currentIndex = nextIndex;
+
+      if(currentIndex >= allArticles.length) {
+        loadMoreBtn.style.display = "none";
+        noMoreMsg.style.display = "block";
+      }
+    }
+
+    db.ref("articles").once("value").then(snapshot => {
+      const data = snapshot.val();
+      container.innerHTML = "";
+      if(!data) {
+        container.innerHTML = "<p style='text-align:center;'>لا توجد مشاركات حالياً.</p>";
+        loadMoreBtn.style.display = "none";
+        return;
+      }
+
+      allArticles = Object.entries(data).reverse();
+
+      if(allArticles.length === 0) {
+        container.innerHTML = "<p style='text-align:center;'>لا توجد مشاركات حالياً.</p>";
+        loadMoreBtn.style.display = "none";
+        return;
+      }
+
+      // عرض أول دفعة
+      loadMore();
+      if(currentIndex < allArticles.length) {
+        loadMoreBtn.style.display = "block";
+      }
+    });
+
+    loadMoreBtn.addEventListener("click", () => {
+      loadMore();
     });
   </script>
 </body>
