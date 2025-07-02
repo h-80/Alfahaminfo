@@ -76,6 +76,62 @@
     button#publishBtn:hover {
       background-color: #162f6c;
     }
+    /* قائمة المشاركات */
+    #postsList {
+      margin-top: 40px;
+      background: #fff;
+      border-radius: 6px;
+      padding: 15px;
+      max-height: 300px;
+      overflow-y: auto;
+      box-shadow: 0 0 10px rgb(0 0 0 / 0.1);
+    }
+    #postsList h3 {
+      margin-top: 0;
+      color: #0b2545;
+      text-align: center;
+      margin-bottom: 15px;
+    }
+    .post-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 10px;
+      border-bottom: 1px solid #ddd;
+    }
+    .post-title {
+      flex: 1;
+      margin: 0 10px 0 0;
+      word-break: break-word;
+      cursor: pointer;
+      color: #162f6c;
+    }
+    .post-title:hover {
+      text-decoration: underline;
+    }
+    .post-actions button {
+      margin-left: 5px;
+      padding: 5px 10px;
+      border-radius: 4px;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background-color 0.2s;
+    }
+    .edit-btn {
+      background-color: #2563eb;
+      color: white;
+    }
+    .edit-btn:hover {
+      background-color: #1e40af;
+    }
+    .delete-btn {
+      background-color: #dc2626;
+      color: white;
+    }
+    .delete-btn:hover {
+      background-color: #991b1b;
+    }
   </style>
 </head>
 <body>
@@ -98,12 +154,11 @@
     <button type="button" onclick="execCmd('justifyRight')" title="محاذاة يمين">يمين</button>
     <button type="button" onclick="execCmd('justifyLeft')" title="محاذاة يسار">يسار</button>
     <button type="button" onclick="execCmd('justifyCenter')" title="محاذاة وسط">وسط</button>
-    <select onchange="execCmd('fontSize', this.value)" title="حجم الخط">
-      <option value="">حجم</option>
-      <option value="2">صغير</option>
-      <option value="4">متوسط</option>
-      <option value="6">كبير</option>
-    </select>
+
+    <!-- أزرار تكبير وتصغير الخط -->
+    <button type="button" onclick="changeFontSize(1)" title="تكبير الخط">A+</button>
+    <button type="button" onclick="changeFontSize(-1)" title="تصغير الخط">A-</button>
+
     <input type="color" onchange="execCmd('foreColor', this.value)" title="لون الخط" />
     <button type="button" onclick="insertImage()" title="إدراج صورة">🖼️</button>
     <button type="button" onclick="insertVideo()" title="إدراج فيديو يوتيوب">📹</button>
@@ -112,6 +167,11 @@
   <div id="editor" contenteditable="true" spellcheck="true" aria-label="محرر النص"></div>
 
   <button id="publishBtn">نشر المشاركة</button>
+
+  <div id="postsList">
+    <h3>المشاركات السابقة</h3>
+    <div id="postsContainer">جارٍ تحميل المشاركات...</div>
+  </div>
 
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -129,6 +189,8 @@
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
+
+    let editingPostId = null;
 
     function execCmd(command, value = null) {
       document.execCommand(command, false, value);
@@ -156,7 +218,6 @@
       }
     }
 
-    // وظيفة لإدراج HTML في مكان المؤشر داخل div المحتوى القابل للتحرير
     function insertHtmlAtCursor(html) {
       const sel = window.getSelection();
       if (!sel || !sel.rangeCount) {
@@ -173,13 +234,119 @@
         lastNode = frag.appendChild(node);
       }
       range.insertNode(frag);
-      // نقل المؤشر بعد المحتوى المضاف
       if (lastNode) {
         range.setStartAfter(lastNode);
         range.collapse(true);
         sel.removeAllRanges();
         sel.addRange(range);
       }
+    }
+
+    function changeFontSize(delta) {
+      const sel = window.getSelection();
+      if (!sel.rangeCount) return;
+
+      const range = sel.getRangeAt(0);
+      if (range.collapsed) {
+        alert("يرجى تحديد نص لتغيير حجمه.");
+        return;
+      }
+
+      const span = document.createElement("span");
+      let computedSize = window.getComputedStyle(range.startContainer.parentNode).fontSize;
+      let size = parseInt(computedSize) || 16;
+
+      size += delta * 2;
+      if (size < 8) size = 8;
+      if (size > 72) size = 72;
+
+      span.style.fontSize = size + "px";
+
+      try {
+        range.surroundContents(span);
+      } catch (e) {
+        alert("يرجى تحديد نص كامل داخل نفس العنصر.");
+      }
+    }
+
+    function loadPosts() {
+      const container = document.getElementById("postsContainer");
+      container.innerHTML = "جارٍ تحميل المشاركات...";
+      db.ref("articles").once("value").then(snapshot => {
+        const data = snapshot.val();
+        container.innerHTML = "";
+        if (!data) {
+          container.innerHTML = "<p style='text-align:center;'>لا توجد مشاركات حالياً.</p>";
+          return;
+        }
+        Object.entries(data).reverse().forEach(([id, post]) => {
+          const div = document.createElement("div");
+          div.className = "post-item";
+
+          const title = document.createElement("p");
+          title.className = "post-title";
+          title.textContent = post.title;
+          title.title = "انقر لتحميل المشاركة";
+          title.onclick = () => editPost(id);
+
+          const actions = document.createElement("div");
+          actions.className = "post-actions";
+
+          const editBtn = document.createElement("button");
+          editBtn.className = "edit-btn";
+          editBtn.textContent = "تعديل";
+          editBtn.onclick = () => editPost(id);
+
+          const deleteBtn = document.createElement("button");
+          deleteBtn.className = "delete-btn";
+          deleteBtn.textContent = "حذف";
+          deleteBtn.onclick = () => deletePost(id);
+
+          actions.appendChild(editBtn);
+          actions.appendChild(deleteBtn);
+
+          div.appendChild(title);
+          div.appendChild(actions);
+
+          container.appendChild(div);
+        });
+      });
+    }
+
+    function editPost(id) {
+      db.ref("articles/" + id).once("value").then(snapshot => {
+        const data = snapshot.val();
+        if (!data) {
+          alert("المشاركة غير موجودة.");
+          return;
+        }
+        editingPostId = id;
+        document.getElementById("title").value = data.title;
+        document.getElementById("imageUrl").value = data.imageUrl;
+        document.getElementById("editor").innerHTML = data.content;
+        document.getElementById("publishBtn").textContent = "تحديث المشاركة";
+      });
+    }
+
+    function deletePost(id) {
+      if (confirm("هل أنت متأكد من حذف هذه المشاركة؟")) {
+        db.ref("articles/" + id).remove().then(() => {
+          alert("تم حذف المشاركة.");
+          // إذا كنا نعدل المشاركة المحذوفة نعيد تعيين النموذج
+          if (editingPostId === id) resetForm();
+          loadPosts();
+        }).catch(err => {
+          alert("حدث خطأ أثناء الحذف: " + err.message);
+        });
+      }
+    }
+
+    function resetForm() {
+      editingPostId = null;
+      document.getElementById("title").value = "";
+      document.getElementById("imageUrl").value = "";
+      document.getElementById("editor").innerHTML = "";
+      document.getElementById("publishBtn").textContent = "نشر المشاركة";
     }
 
     document.getElementById("publishBtn").addEventListener("click", () => {
@@ -192,16 +359,34 @@
         return;
       }
 
-      const newPostKey = db.ref().child("articles").push().key;
-      db.ref("articles/" + newPostKey).set({ title, imageUrl, content })
-        .then(() => {
-          alert("✅ تم نشر المقال بنجاح");
-          location.reload();
-        })
-        .catch(error => {
-          alert("❌ حدث خطأ أثناء النشر: " + error.message);
-        });
+      if (editingPostId) {
+        // تحديث
+        db.ref("articles/" + editingPostId).set({ title, imageUrl, content })
+          .then(() => {
+            alert("✅ تم تحديث المقال بنجاح");
+            resetForm();
+            loadPosts();
+          })
+          .catch(error => {
+            alert("❌ حدث خطأ أثناء التحديث: " + error.message);
+          });
+      } else {
+        // إضافة جديد
+        const newPostKey = db.ref().child("articles").push().key;
+        db.ref("articles/" + newPostKey).set({ title, imageUrl, content })
+          .then(() => {
+            alert("✅ تم نشر المقال بنجاح");
+            resetForm();
+            loadPosts();
+          })
+          .catch(error => {
+            alert("❌ حدث خطأ أثناء النشر: " + error.message);
+          });
+      }
     });
+
+    // تحميل المشاركات عند فتح الصفحة
+    loadPosts();
   </script>
 </body>
 </html>
