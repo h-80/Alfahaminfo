@@ -41,6 +41,13 @@
       padding: 6px 10px;
       font-size: 16px;
       cursor: pointer;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      background: #fff;
+      transition: background-color 0.2s;
+    }
+    #toolbar button:hover, #toolbar select:hover, #toolbar input[type=color]:hover {
+      background-color: #e0e7ff;
     }
     #editor {
       background: #fff;
@@ -49,6 +56,9 @@
       border-radius: 6px;
       padding: 15px;
       overflow-y: auto;
+      font-size: 16px;
+      line-height: 1.5;
+      color: #111;
     }
     button#publishBtn {
       margin-top: 20px;
@@ -61,6 +71,10 @@
       cursor: pointer;
       display: block;
       width: 100%;
+      transition: background-color 0.3s;
+    }
+    button#publishBtn:hover {
+      background-color: #162f6c;
     }
   </style>
 </head>
@@ -78,30 +92,31 @@
   </div>
 
   <div id="toolbar">
-    <button onclick="execCmd('bold')"><b>B</b></button>
-    <button onclick="execCmd('italic')"><i>I</i></button>
-    <button onclick="execCmd('underline')"><u>U</u></button>
-    <button onclick="execCmd('justifyRight')">يمين</button>
-    <button onclick="execCmd('justifyLeft')">يسار</button>
-    <button onclick="execCmd('justifyCenter')">وسط</button>
-    <select onchange="execCmd('fontSize', this.value)">
+    <button type="button" onclick="execCmd('bold')" title="غامق"><b>B</b></button>
+    <button type="button" onclick="execCmd('italic')" title="مائل"><i>I</i></button>
+    <button type="button" onclick="execCmd('underline')" title="تحته خط"><u>U</u></button>
+    <button type="button" onclick="execCmd('justifyRight')" title="محاذاة يمين">يمين</button>
+    <button type="button" onclick="execCmd('justifyLeft')" title="محاذاة يسار">يسار</button>
+    <button type="button" onclick="execCmd('justifyCenter')" title="محاذاة وسط">وسط</button>
+    <select onchange="execCmd('fontSize', this.value)" title="حجم الخط">
       <option value="">حجم</option>
       <option value="2">صغير</option>
       <option value="4">متوسط</option>
       <option value="6">كبير</option>
     </select>
-    <input type="color" onchange="execCmd('foreColor', this.value)" />
-    <button onclick="insertImage()">🖼️ صورة</button>
-    <button onclick="insertVideo()">📹 فيديو</button>
+    <input type="color" onchange="execCmd('foreColor', this.value)" title="لون الخط" />
+    <button type="button" onclick="insertImage()" title="إدراج صورة">🖼️</button>
+    <button type="button" onclick="insertVideo()" title="إدراج فيديو يوتيوب">📹</button>
   </div>
 
-  <div id="editor" contenteditable="true"></div>
+  <div id="editor" contenteditable="true" spellcheck="true" aria-label="محرر النص"></div>
 
   <button id="publishBtn">نشر المشاركة</button>
 
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyCcXWs8SCvzUmLaqdxBe6rTGaRPqvz7BBc",
@@ -121,14 +136,49 @@
 
     function insertImage() {
       const url = prompt("رابط الصورة:");
-      if (url) execCmd("insertImage", url);
+      if (url) {
+        const imgHTML = `<img src="${url}" style="max-width:100%; height:auto;" />`;
+        insertHtmlAtCursor(imgHTML);
+      }
     }
 
     function insertVideo() {
       const url = prompt("رابط فيديو YouTube:");
       if (url) {
-        const iframe = `<iframe width="100%" height="315" src="${url.replace("watch?v=", "embed/")}" frameborder="0" allowfullscreen></iframe>`;
-        document.getElementById("editor").innerHTML += iframe;
+        let embedUrl = url;
+        if (url.includes("watch?v=")) {
+          embedUrl = url.replace("watch?v=", "embed/");
+        } else if (url.includes("youtu.be/")) {
+          embedUrl = url.replace("youtu.be/", "www.youtube.com/embed/");
+        }
+        const iframeHTML = `<iframe width="100%" height="315" src="${embedUrl}" frameborder="0" allowfullscreen></iframe>`;
+        insertHtmlAtCursor(iframeHTML);
+      }
+    }
+
+    // وظيفة لإدراج HTML في مكان المؤشر داخل div المحتوى القابل للتحرير
+    function insertHtmlAtCursor(html) {
+      const sel = window.getSelection();
+      if (!sel || !sel.rangeCount) {
+        document.getElementById("editor").innerHTML += html;
+        return;
+      }
+      const range = sel.getRangeAt(0);
+      range.deleteContents();
+      const el = document.createElement("div");
+      el.innerHTML = html;
+      const frag = document.createDocumentFragment();
+      let node, lastNode;
+      while ((node = el.firstChild)) {
+        lastNode = frag.appendChild(node);
+      }
+      range.insertNode(frag);
+      // نقل المؤشر بعد المحتوى المضاف
+      if (lastNode) {
+        range.setStartAfter(lastNode);
+        range.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(range);
       }
     }
 
