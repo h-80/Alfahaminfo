@@ -45,8 +45,8 @@
     }
     #editor {
       width: 100%;
-      min-height: 500px;
-      padding: 15px;
+      min-height: 400px;
+      padding: 10px;
       background: white;
       border-radius: 6px;
       border: 1px solid #ccc;
@@ -93,6 +93,12 @@
     .post button.delete-btn {
       background-color: #c0392b;
     }
+    img.preview {
+      max-width: 100%;
+      margin-top: 10px;
+      display: none;
+      border-radius: 8px;
+    }
   </style>
 </head>
 <body>
@@ -107,7 +113,7 @@
     <label>رابط الصورة المصغرة (أو ارفع صورة):</label>
     <input type="text" id="imageUrl" placeholder="أدخل رابط الصورة" />
     <input type="file" id="uploadImage" accept="image/*" />
-    <img id="previewImage" style="max-width:100%; margin-top:10px; display:none; border-radius:8px;" />
+    <img id="previewImage" class="preview" />
   </div>
 
   <div class="editor-toolbar">
@@ -119,7 +125,7 @@
     <button onclick="execCmd('justifyLeft')">يسار</button>
     <button onclick="insertImageFromLink()">🖼 رابط صورة</button>
     <button onclick="insertImageFromDevice()">📁 من الجهاز</button>
-    <button onclick="insertImageWithLink()">🔗 صورة برابط</button>
+    <button onclick="insertLinkedImageFromDevice()">📁 صورة برابط</button>
     <button onclick="insertYoutube()">📺 يوتيوب</button>
     <button onclick="insertHtml()">🔤 HTML</button>
     <select onchange="changeFontSize(this.value)">
@@ -186,13 +192,23 @@
       input.click();
     }
 
-    function insertImageWithLink() {
-      const imgUrl = prompt("رابط الصورة:");
-      const linkUrl = prompt("الرابط الذي تريد فتحه عند الضغط:");
-      if (imgUrl && linkUrl) {
-        const html = `<a href="${linkUrl}" target="_blank"><img src="${imgUrl}" style="max-width:100%; border-radius:8px;" /></a>`;
-        document.execCommand('insertHTML', false, html);
-      }
+    function insertLinkedImageFromDevice() {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.onchange = e => {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+        reader.onload = function (event) {
+          const link = prompt("📎 أدخل الرابط الذي تريد فتحه عند الضغط على الصورة:");
+          if (link) {
+            const html = `<a href="${link}" target="_blank"><img src="${event.target.result}" style="max-width:100%; border-radius:8px;" /></a>`;
+            document.execCommand('insertHTML', false, html);
+          }
+        };
+        reader.readAsDataURL(file);
+      };
+      input.click();
     }
 
     function insertYoutube() {
@@ -207,7 +223,7 @@
           return;
         }
         const embedUrl = `https://www.youtube.com/embed/${videoId}`;
-        const iframe = `<iframe width="100%" height="315" src="${embedUrl}" frameborder="0" allowfullscreen></iframe>`;
+        const iframe = `<iframe width="100%" height="315" src="${embedUrl}" frameborder="0" allowfullscreen style="border-radius:8px; margin:10px 0;"></iframe>`;
         document.execCommand('insertHTML', false, iframe);
       }
     }
